@@ -11,6 +11,8 @@ import WebKit
 class ViewController: UIViewController {
     
     private var webView: WKWebView?
+    private var overlayView: UIView?
+    private var isOverlayAnimating = false
     
     let javaScriptCode = """
     function addSwipeEventListener() {
@@ -36,7 +38,6 @@ class ViewController: UIViewController {
 
     addSwipeEventListener();
     """
-
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -56,6 +57,13 @@ class ViewController: UIViewController {
             let request = URLRequest(url: url)
             webView.load(request)
         }
+        
+        let overlayFrame = CGRect(x: 0, y: view.bounds.height - 100, width: view.bounds.width, height: 100)
+        let overlayView = UIView(frame: overlayFrame)
+        overlayView.backgroundColor = .red
+        overlayView.alpha = 0.0
+        view.addSubview(overlayView)
+        self.overlayView = overlayView
     }
 }
 extension ViewController: WKNavigationDelegate {
@@ -65,11 +73,28 @@ extension ViewController: WKNavigationDelegate {
     }
 }
 
+extension ViewController {
+    private func showOverlay() {
+        guard let overlayView = overlayView, !isOverlayAnimating else { return }
+        isOverlayAnimating = true
+        UIView.animate(withDuration: 0.3, animations: {
+            overlayView.alpha = 1.0
+        }, completion: { _ in
+            UIView.animate(withDuration: 0.3, delay: 3.0, options: [], animations: {
+                overlayView.alpha = 0.0
+            }, completion: { _ in
+                self.isOverlayAnimating = false
+            })
+        })
+    }
+}
+
 extension ViewController: WKScriptMessageHandler {
     
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         if message.name == "swipeDetected" {
             print("Left gesture detected")
+            showOverlay()
         }
     }
 }
